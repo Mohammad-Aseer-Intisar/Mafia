@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Real-time browser Mafia party game. Create a room, share the code, and play with friends over voice chat.">
+  <meta name="theme-color" content="#15121c">
+  <title>Mafia — Trust No One</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🕶️</text></svg>">
+</head>
+<body class="phase-lobby">
+
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+  <button id="btn-help" class="help-fab" type="button" aria-haspopup="dialog" aria-controls="help-panel">
+    <span aria-hidden="true">?</span><span class="help-fab-label">Rules</span>
+  </button>
+
+  <!-- ============ Home ============ -->
+  <main id="screen-home" class="screen screen-home">
+    <header class="home-hero">
+      <h1 class="game-title">Mafia</h1>
+      <p class="game-tagline">Trust no one. Survive the night.</p>
+    </header>
+    <div class="home-panels">
+      <section class="panel" aria-labelledby="create-title">
+        <h2 id="create-title">Create a game</h2>
+        <p class="panel-sub">Start a room and share the code. Use Discord or a call for voice.</p>
+        <form id="form-create">
+          <label class="field-label" for="create-name">Your name</label>
+          <input class="field" id="create-name" type="text" maxlength="20" required autocomplete="off" placeholder="e.g. Sana">
+          <button class="btn btn-primary btn-block" type="submit">Create room</button>
+        </form>
+      </section>
+      <section class="panel" aria-labelledby="join-title">
+        <h2 id="join-title">Join a game</h2>
+        <p class="panel-sub">Got a 4-letter code from a friend? Enter it here.</p>
+        <form id="form-join">
+          <label class="field-label" for="join-name">Your name</label>
+          <input class="field" id="join-name" type="text" maxlength="20" required autocomplete="off" placeholder="e.g. Rafi">
+          <label class="field-label" for="join-code">Room code</label>
+          <input class="field field-code" id="join-code" type="text" minlength="4" maxlength="4" required autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ABCD">
+          <button class="btn btn-secondary btn-block" type="submit">Join room</button>
+        </form>
+      </section>
+    </div>
+  </main>
+
+  <!-- ============ Lobby ============ -->
+  <main id="screen-lobby" class="screen screen-lobby" hidden>
+    <header class="lobby-head">
+      <div>
+        <h1 class="screen-title">Lobby</h1>
+        <p id="lobby-count" class="screen-sub">0 players</p>
+      </div>
+      <button id="btn-copy-code" class="code-badge" type="button" title="Copy room code">
+        <span class="code-badge-label">code</span>
+        <strong id="lobby-code">— — — —</strong>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+      </button>
+    </header>
+
+    <div class="lobby-grid">
+      <section class="panel" aria-labelledby="lobby-players-title">
+        <h2 id="lobby-players-title" class="panel-title">Players</h2>
+        <ul id="lobby-players" class="lobby-roster"></ul>
+        <div id="lobby-warnings" class="advisory-list"></div>
+        <div class="lobby-actions">
+          <button id="btn-start" class="btn btn-primary btn-block" type="button" hidden>Start game</button>
+          <p id="lobby-waiting" class="waiting-note" hidden>Waiting for the host to start…</p>
+          <button id="btn-leave" class="btn btn-ghost btn-block" type="button">Leave lobby</button>
+        </div>
+      </section>
+
+      <section class="panel" aria-labelledby="lobby-settings-title">
+        <h2 id="lobby-settings-title" class="panel-title">Game setup</h2>
+        <div id="suggestion-box" class="suggestion-box">
+          <div class="suggestion-head">
+            <span id="suggestion-mode" class="tag tag-gold">Suggested setup</span>
+            <button id="btn-reset-suggested" class="btn btn-ghost btn-small" type="button" hidden>Reset to suggested</button>
+          </div>
+          <ul id="suggestion-reasons" class="suggestion-reasons"></ul>
+        </div>
+        <div id="role-steppers" class="role-steppers"></div>
+        <p class="villager-fill">Plain Villagers fill the remaining seats: <strong id="villager-count">0</strong></p>
+        <h3 class="panel-subtitle">Timers</h3>
+        <div class="settings-timers">
+          <div class="field-group">
+            <label class="field-label" for="set-night">Night</label>
+            <select class="field" id="set-night" data-setting="nightTimer">
+              <option value="30">30s</option><option value="45">45s</option><option value="60">60s</option><option value="90">90s</option><option value="0">No limit</option>
+            </select>
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="set-discussion">Discussion</label>
+            <select class="field" id="set-discussion" data-setting="discussionTimer">
+              <option value="60">1m</option><option value="120">2m</option><option value="180">3m</option><option value="300">5m</option><option value="0">No limit</option>
+            </select>
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="set-voting">Voting</label>
+            <select class="field" id="set-voting" data-setting="votingTimer">
+              <option value="30">30s</option><option value="45">45s</option><option value="60">60s</option><option value="90">90s</option><option value="0">No limit</option>
+            </select>
+          </div>
+        </div>
+        <h3 class="panel-subtitle">Rules</h3>
+        <label class="toggle-row" for="set-reveal">
+          <span>Reveal role on death</span>
+          <input type="checkbox" id="set-reveal" data-setting="revealRoleOnDeath" checked>
+        </label>
+        <label class="toggle-row" for="set-firstnight">
+          <span>First-night kills</span>
+          <input type="checkbox" id="set-firstnight" data-setting="firstNightKill" checked>
+        </label>
+      </section>
+    </div>
+  </main>
+
+  <!-- ============ Game ============ -->
+  <main id="screen-game" class="screen screen-game" hidden>
+    <header class="game-head panel">
+      <div class="phase-wrap">
+        <span id="phase-chip" class="phase-chip"><span id="phase-icon" aria-hidden="true">🌑</span> <span id="phase-name">Night 1</span></span>
+      </div>
+      <div id="timer" class="timer" role="timer" aria-label="Phase timer">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        <span id="timer-value">—</span>
+      </div>
+    </header>
+
+    <div class="game-grid">
+      <div class="game-main">
+        <section id="role-banner" class="panel role-banner" aria-live="polite">
+          <div class="role-banner-role">
+            <span class="field-label">Your role</span>
+            <strong id="my-role">—</strong>
+          </div>
+          <p id="action-prompt" class="action-prompt"></p>
+          <div id="action-buttons" class="action-buttons"></div>
+        </section>
+
+        <ul id="player-grid" class="player-grid"></ul>
+      </div>
+
+      <aside class="game-side">
+        <section class="panel log-panel" aria-labelledby="log-title">
+          <h2 id="log-title" class="panel-title">Events</h2>
+          <div id="log-feed" class="log-feed" role="log" aria-live="polite"></div>
+        </section>
+        <section id="mafia-chat" class="panel chat-panel" aria-labelledby="chat-title" hidden>
+          <h2 id="chat-title" class="panel-title panel-title-mafia">Mafia chat <span class="tag tag-crimson">private</span></h2>
+          <div id="chat-feed" class="chat-feed"></div>
+          <form id="form-chat" class="chat-form">
+            <label class="visually-hidden" for="chat-input">Message to the Mafia</label>
+            <input class="field" id="chat-input" type="text" maxlength="240" autocomplete="off" placeholder="Whisper to the team…">
+            <button class="btn btn-secondary" type="submit">Send</button>
+          </form>
+        </section>
+      </aside>
+    </div>
+  </main>
+
+  <!-- ============ End ============ -->
+  <main id="screen-end" class="screen screen-end" hidden>
+    <section class="panel end-panel">
+      <h1 id="end-title" class="end-title">Game over</h1>
+      <p id="end-message" class="end-message"></p>
+      <p id="end-cowinners" class="end-cowinners"></p>
+      <table class="end-table">
+        <thead><tr><th scope="col">Player</th><th scope="col">Role</th><th scope="col">Fate</th></tr></thead>
+        <tbody id="end-roster"></tbody>
+      </table>
+      <div class="end-actions">
+        <button id="btn-again" class="btn btn-primary" type="button" hidden>Back to lobby</button>
+        <p id="end-waiting" class="waiting-note" hidden>Waiting for the host…</p>
+        <button id="btn-home" class="btn btn-ghost" type="button">Leave game</button>
+      </div>
+    </section>
+  </main>
+
+  <!-- ============ Rules / Help panel ============ -->
+  <div id="help-panel" class="help-overlay" role="dialog" aria-modal="true" aria-labelledby="help-title" hidden>
+    <div class="help-backdrop" data-close-help></div>
+    <div class="help-sheet" role="document">
+      <header class="help-head">
+        <h2 id="help-title">Rules &amp; roles</h2>
+        <button id="btn-close-help" class="btn btn-ghost btn-small" type="button" aria-label="Close rules panel">✕ Close</button>
+      </header>
+      <div id="help-body" class="help-body"></div>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/shared/catalog.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>
